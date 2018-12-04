@@ -1,9 +1,15 @@
 import React, {PureComponent} from "react";
-import {Text, View, StyleSheet, Image, ScrollView, Button,WebView} from "react-native";
+import {Text, View, StyleSheet, Image, ScrollView, Button, FlatList} from "react-native";
 import {getDetail} from "../../service/api";
-import TestOne from "../../components/TestOne";
 
 export default class extends PureComponent {
+    static navigationOptions = ({ navigation }) => {
+        const { title } = navigation.state.params || {};
+        return {
+            title,
+        };
+    };
+
     state = {
         start: 1,
         detailObj: {}, // 电影详情对象
@@ -25,7 +31,7 @@ export default class extends PureComponent {
         };
         try {
             const res = await getDetail(this.state.id, params);
-            console.log(res,'详情数据');
+            console.log(res, '详情数据');
             if (res) {
                 this.setState({
                     detailObj: res
@@ -74,6 +80,27 @@ export default class extends PureComponent {
                     }}
                     title="在线观看"
                 />
+                {detailObj.photos && detailObj.photos.length > 0 &&
+                <View style={sty.list_actor}>
+                    <Text style={sty.title_about}>相关资料</Text>
+                    <FlatList
+                        style={sty.lists}
+                        data={detailObj.photos}
+                        keyExtractor={(item, index) => String(index)}
+                        renderItem={(v) => {
+                            return (
+                                <View style={sty.pic_wrap}>
+                                    <Image key={v.index} style={sty.pics} source={{uri: v.item.image}}/>
+                                </View>
+                            )
+                        }}
+                        horizontal={true}
+                        showsHorizontalScrollIndicator={false}
+                    />
+
+                </View>
+
+                }
 
             </ScrollView>
         );
@@ -116,5 +143,33 @@ const sty = StyleSheet.create({
         lineHeight: 25,
         color: '#BDBDBD',
         marginLeft: 10,
+    },
+    list_actor: {
+        flex: 1,
+        height: 150,
+        marginBottom: 10,
+    },
+    lists: {
+        display: 'flex',
+        overflow: 'scroll',
+        width: 750,
+        height: 100,
+        flexWrap: 'nowrap',
+        flexDirection: 'row'
+    },
+    pic_wrap: {
+        width: 80,
+        height: 100,
+        marginLeft: 5,
+        marginRight: 5,
+    },
+    pics: {
+        width: 80,
+        height: 100,
+    },
+    title_about: {
+        width: 200,
+        height: 50,
+        lineHeight: 50,
     },
 });

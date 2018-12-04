@@ -5,35 +5,40 @@ import {
     StyleSheet,
     Image,
     ScrollView,
-    TouchableHighlight
+    TouchableHighlight,
+    Dimensions
 } from "react-native";
 import Swiper from "react-native-swiper";
 import {getInTheaters} from "../../service/api";
 
+const {height: D_HEIGHT, width: D_WIDTH} = Dimensions.get('window');
 export default class extends PureComponent {
     state = {
         start: 1,
-        contentList: [] // 热映列表数据
+        contentList: [],// 热映列表数据
+        total: '',// 总条数
     };
 
     componentDidMount() {
-        this.getInTheatersList();
+        this.getInTheatersList(false);
     }
 
-    getInTheatersList = async () => {
+    getInTheatersList = async (startNew) => {
         // 获取热映列表
 
         const params = {
             apikey: "0b2bdeda43b5688921839c8ecb20399b",
             city: "上海",
-            start: this.state.start,
+            start: startNew ? startNew : this.state.start,
             count: 15
         };
         try {
             const res = await getInTheaters(params);
             if (res && res.subjects && res.subjects.length > 0) {
                 this.setState({
-                    contentList: res.subjects
+                    contentList: this.state.contentList.concat(res.subjects),
+                    total: res.total,
+                    start: res.start,
                 });
             }
             console.log(res);
@@ -43,14 +48,25 @@ export default class extends PureComponent {
     };
 
     render() {
-        const {contentList} = this.state;
+        const {contentList, start, total} = this.state;
         return (
-            <ScrollView style={sty.container}>
+            <ScrollView
+                style={sty.container}
+                onMomentumScrollEnd={() => {
+                    if ((start-0) * 15 >= (total-0)) {
+                        console.log('已经没有更多了')
+                    } else {
+                        const startNew = this.state.start + 1;
+                        console.log('要分页了',startNew);
+                        this.getInTheatersList(startNew)
+                    }
+
+                }}
+            >
                 <View style={sty.top}>
                     <Swiper
                         style={sty.swiperWrap}
                         height={200}
-                        // showsButtons={true}
                         autoplay={true}
                     >
                         {contentList.map((d, index) => {
@@ -59,7 +75,8 @@ export default class extends PureComponent {
                                     key={index}
                                     onPress={() => {
                                         this.props.navigation.navigate("Detail", {
-                                            id: d.id
+                                            id: d.id,
+                                            title: d.title
                                         });
                                     }}
                                 >
@@ -83,9 +100,9 @@ export default class extends PureComponent {
                             <TouchableHighlight
                                 key={index + 'a'}
                                 onPress={() => {
-                                    console.log("detail", "222");
                                     this.props.navigation.navigate("Detail", {
-                                        id: item.id
+                                        id: item.id,
+                                        title: item.title
                                     });
                                 }}
                             >
@@ -137,12 +154,12 @@ const sty = StyleSheet.create({
         // height: 200
     },
     swiper: {
-        width: 375,
+        width: '100%',
         height: 200,
         position: "relative"
     },
     swiper_pic: {
-        width: 375,
+        width: '100%',
         height: 200,
         position: "absolute",
         left: 0,
@@ -165,15 +182,16 @@ const sty = StyleSheet.create({
         flex: 3,
         justifyContent: "flex-start",
         flexDirection: "row",
-        padding: 1,
+        padding: 5,
         flexWrap: "wrap"
     },
     item: {
         height: 180,
-        width: 120
+        width: (D_WIDTH - 40) / 3,
+        margin: 5
     },
     pic_info: {
-        width: 120,
+        width: '100%',
         height: 120,
         position: "relative"
     },
@@ -182,7 +200,7 @@ const sty = StyleSheet.create({
         height: 120,
         left: 0,
         top: 0,
-        width: 120
+        width: '100%'
     },
     vip: {
         position: "absolute",
